@@ -172,11 +172,10 @@ document.onkeydown = function (e) {
       let t = 84;
 
       if(event.which == t){
-        messageInput.focus();
+        // wait a bit so that the "t" doesn't get written in the textbox
+        setTimeout(function(){messageInput.focus();},50);
       }
     }
-
-    
 
 };
 
