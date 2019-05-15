@@ -56,6 +56,10 @@ function getVector(e){
   return {x: e.clientX - canvas.offsetLeft, y: e.clientY - canvas.offsetTop};
 }
 
+function getClickPosition(e){
+  return {x: e.clientX - canvas.parentElement.offsetLeft, y: e.clientY - canvas.parentElement.offsetTop};
+}
+
 function subtract(v1, v2){
   return {x: v1.x-v2.x, y: v1.y-v2.y};
 }
@@ -94,7 +98,7 @@ socket.emit("login",playername);
 
 var canvas = document.getElementById("canvas");
 
-canvas.width = (document.body.clientWidth-10) * 0.70 ;
+canvas.width = (document.body.clientWidth-10) * 1.00 ;
 canvas.height = (document.body.clientHeight-10) * 0.90 ;
 
 var ctx = canvas.getContext("2d");
@@ -207,6 +211,10 @@ socket.on("state", function(state){
     drawWorld(state);
 });
 
+canvas.addEventListener("mousedown",function(event){
+    let position = statepos(getClickPosition(event));
+    socket.emit("goto",position);
+});
 
 
 

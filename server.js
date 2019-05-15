@@ -44,6 +44,10 @@ function vector(x,y){
   return {x: x, y: y}
 }
 
+function magnitude(v){
+  return distance(zeroVector, v);
+}
+
 function getVector(e){
   return {x: e.clientX - canvas.offsetLeft, y: e.clientY - canvas.offsetTop};
 }
@@ -129,12 +133,33 @@ function deleteFromState(object, state){
 
 function movePlayers(state){
   for (player of state.players()){
+
     let delta = new Date().getTime() - player.lastMoved;
     player.lastMoved = new Date().getTime();
 
-    let direction = movementDirection(player);
+    if(player.moveTarget && player.shouldAutoMove()){
+      // move towards target
+      let direction = unitVector(subtract(player.moveTarget, player.position));
 
-    player.position = add(player.position, multiply(direction, delta/1000 * playerSpeed));
+      if(distance(player.position, player.moveTarget) > (delta/1000)*playerSpeed){
+        // if the target is far away
+        player.position = add(player.position, multiply(direction, (delta/1000)*playerSpeed));
+      }else{
+        // if the target is very close
+        player.position = player.moveTarget;
+        player.moveTarget = false;
+      }
+
+    }else{
+      // cancel moveTarget
+      player.moveTarget = false;
+      // move with WASD
+      let direction = movementDirection(player);
+      player.position = add(player.position, multiply(direction, delta/1000 * playerSpeed));
+    
+    }
+
+    
   }
 }
 
@@ -210,7 +235,15 @@ io.on("connection", function(socket){
       socket:socket,
       position:{x:0,y:0},
       moving: new Map([["up",false],["down",false],["left",false],["right",false]]),
-      lastMoved: new Date().getTime()
+      lastMoved: new Date().getTime(),
+      moveTarget: false,
+      shouldAutoMove: function(){
+        let shouldAuto = true;
+        this.moving.forEach(function(value, key, map){
+          shouldAuto = shouldAuto && !value;
+        });
+        return shouldAuto;
+      }
     };
 
     state.objects.push(player);
@@ -242,6 +275,14 @@ io.on("connection", function(socket){
 
   socket.on("stopMove", function(direction){
     player.moving.set(direction, false);
+  });
+
+  socket.on("goto", function(position){
+    player.moveTarget = position;
+    player.moving.set("up",false);
+    player.moving.set("down",false);
+    player.moving.set("left",false);
+    player.moving.set("right",false);
   });
 
 });

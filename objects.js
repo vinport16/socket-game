@@ -3,6 +3,10 @@ function abpos(position){
   return add( position, subtract( {x:canvas.width/2, y:canvas.height/2}, viewPosition))
 }
 
+function statepos(position){
+  return subtract( position, subtract( {x:canvas.width/2 + document.body.scrollTop, y:canvas.height/2}, viewPosition))
+}
+
 function drawGridLines(){
   relative = viewPosition.y % 150;
   numLines = Math.floor(canvas.height/150) + 2;
