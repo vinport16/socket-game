@@ -42,10 +42,11 @@ function drawLine(v1, v2, stroke){
     ctx.stroke();
 }
 
-function drawText(text, position){
+function drawText(text, position, color){
   ctx.textAlign = "center"
   ctx.font = "12pt Arial";
-  ctx.strokeStyle = "white";
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
   ctx.fillText(text, position.x, position.y); 
 }
 

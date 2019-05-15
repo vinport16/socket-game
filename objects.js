@@ -34,12 +34,12 @@ function drawWorld(state){
   for (obj of state){
     if(obj.name == playername){
       drawCircle(abpos(obj.position), 10, "white", "red");
-      drawText(obj.name, add(abpos(obj.position), {x:0, y:25} ));
+      drawText(obj.name, add(abpos(obj.position), {x:0, y:25}), "white");
     }else if(obj.type == "player"){
       drawCircle(abpos(obj.position), 10, "red", "white");
-      drawText(obj.name, add(abpos(obj.position), {x:0, y:25} ));
+      drawText(obj.name, add(abpos(obj.position), {x:0, y:25}), "red");
     }else if(obj.type == "message"){
-      drawText(obj.text, add(abpos(obj.position), {x:0, y:-15} ));
+      drawText(obj.text, add(abpos(obj.position), {x:0, y:-15}), "green");
     }
   }
 }
