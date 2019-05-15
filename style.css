@@ -12,8 +12,11 @@ canvas{
   border-radius: 10px;
 }
 
-div.display{
+.messageinput{
+  width: 40%;
+}
 
+div.display{
   float: right;
   width: 29%;
   height: 100%;

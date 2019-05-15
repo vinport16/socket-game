@@ -89,14 +89,16 @@ function rotateVector(vec, ang){
 // setup
 
 
-socket.emit("message",playername);
+socket.emit("login",playername);
 
 var canvas = document.getElementById("canvas");
 
 canvas.width = (document.body.clientWidth-10) * 0.70 ;
-canvas.height = document.body.clientHeight - 10 ;
+canvas.height = (document.body.clientHeight-10) * 0.90 ;
 
 var ctx = canvas.getContext("2d");
+
+messageInput = document.getElementById("messageinput");
 
 function disableAllButtons(){
   var buttons = document.getElementsByTagName("button");
@@ -134,20 +136,47 @@ var state = [{name:playername,position:viewPosition}];
 document.onkeydown = function (e) {
     event = e || window.event;
     
-    w = 87
-    a = 65
-    s = 83
-    d = 68
+    // check if you're in the text message box
+    if(document.activeElement == messageInput){
 
-    if(event.which == w){
-        socket.emit("startMove", "up");
-    }else if(event.which == s){
-        socket.emit("startMove", "down");
-    }else if(event.which == a){
-        socket.emit("startMove", "left");
-    }else if(event.which == d){
-        socket.emit("startMove", "right");
+      let enter = 13;
+
+      console.log(event.which);
+
+      if(event.which == enter){
+        socket.emit("message",{text:messageInput.value, timeout:8000});
+        messageInput.value = "";
+        document.activeElement.blur();
+      }
+
+    }else{
+      // movement
+
+      let w = 87;
+      let a = 65;
+      let s = 83;
+      let d = 68;
+
+      if(event.which == w){
+          socket.emit("startMove", "up");
+      }else if(event.which == s){
+          socket.emit("startMove", "down");
+      }else if(event.which == a){
+          socket.emit("startMove", "left");
+      }else if(event.which == d){
+          socket.emit("startMove", "right");
+      }
+
+      // messages
+
+      let t = 84;
+
+      if(event.which == t){
+        messageInput.focus();
+      }
     }
+
+    
 
 };
 

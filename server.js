@@ -93,19 +93,24 @@ directions.set("right", vector(1, 0));
 // state functions
 
 function sendState(state){
+  
   cleanedState = [];
-  for (obj of state.players){
-    cleanedState.push({type:obj.type,name:obj.name,position:obj.position});
+  for (obj of state.players()){
+    cleanedState.push({type:obj.type, name:obj.name, position:obj.position});
   }
-  for (obj of state.players){
-    if(obj.type == "player"){
-      obj.socket.emit("state", cleanedState);
-    }
+
+  for (obj of state.liveMessages()){
+    cleanedState.push({type:obj.type, text:obj.text, position:obj.position, sender:obj.sender.name});
+  }
+
+  // send to each player
+  for (obj of state.players()){
+    obj.socket.emit("state", cleanedState);
   }
 }
 
 function findInState(name, state){
-  for (obj of state.players){
+  for (obj of state.objects){
     if(obj.name == name){
       return obj;
     }
@@ -113,23 +118,31 @@ function findInState(name, state){
   return false;
 }
 
-function deletePlayer(player, state){
-  for (var i = 0; i < state.players.length; i++){
-    if(state.players[i] === player){
-      state.players.splice(i,1);
+function deleteFromState(object, state){
+  for (var i = 0; i < state.objects.length; i++){
+    if(state.objects[i] === object){
+      state.objects.splice(i,1);
       break;
     }
   }
 }
 
 function movePlayers(state){
-  for (player of state.players){
+  for (player of state.players()){
     let delta = new Date().getTime() - player.lastMoved;
     player.lastMoved = new Date().getTime();
 
     let direction = movementDirection(player);
 
     player.position = add(player.position, multiply(direction, delta/1000 * playerSpeed));
+  }
+}
+
+function removeOldMessages(state){
+  for(message of state.liveMessages()){
+    if(message.time + message.timeout < new Date().getTime()){
+      deleteFromState(message, state);
+    }
   }
 }
 
@@ -155,11 +168,29 @@ function movementDirection(player){
 
 var state =
 {
-  players: [],
+  objects: [],
   startTime: new Date().getTime(),
   frameTime: new Date().getTime(),
   deltaTime: function(){
-    return frameTime - new Date().getTime();
+    return this.frameTime - new Date().getTime();
+  },
+  players: function(){
+    let out = [];
+    for(obj of this.objects){
+      if(obj.type == "player"){
+        out.push(obj);
+      }
+    }
+    return out;
+  },
+  liveMessages: function(){
+    let out = [];
+    for(obj of this.objects){
+      if(obj.type == "message"){
+        out.push(obj);
+      }
+    }
+    return out;
   }
 };
 
@@ -169,7 +200,7 @@ var playerSpeed = 200; // px/sec
 
 io.on("connection", function(socket){
   var player;
-  socket.on("message", function(msg){
+  socket.on("login", function(msg){
     
     console.log("Player "+msg+" logged in.");
     
@@ -182,13 +213,26 @@ io.on("connection", function(socket){
       lastMoved: new Date().getTime()
     };
 
-    state.players.push(player);
+    state.objects.push(player);
 
     socket.on("disconnect", function(){
       console.log(player.name+" disconnected.");
-      deletePlayer(player, state);
+      deleteFromState(player, state);
     });
 
+  });
+
+  socket.on("message", function(mes){
+    let message = {
+      type:"message",
+      text:mes.text,
+      time:new Date().getTime(),
+      timeout:mes.timeout,
+      sender: player,
+      position: player.position
+    };
+
+    state.objects.push(message);
   });
 
 
@@ -210,6 +254,8 @@ function mainLoop(){
   state.frameTime = new Date().getTime();
 
   movePlayers(state);
+
+  removeOldMessages(state);
 
   sendState(state);
 }
