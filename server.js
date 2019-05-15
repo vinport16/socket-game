@@ -214,7 +214,7 @@ function mainLoop(){
   sendState(state);
 }
 
-setInterval(mainLoop,100);
+setInterval(mainLoop,30);
 
 
 
