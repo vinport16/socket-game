@@ -35,7 +35,6 @@ app.get('/', function(req, res){
   res.sendFile(__dirname + '/index.html');
 });
 
-
 // vector math functions
 
 var zeroVector = {x:0,y:0};
@@ -107,6 +106,8 @@ function sendState(state){
     cleanedState.push({type:obj.type, text:obj.text, position:obj.position, sender:obj.sender.name});
   }
 
+  cleanedState = cleanedState.concat(state.zones());
+
   // send to each player
   for (obj of state.players()){
     obj.socket.emit("state", cleanedState);
@@ -171,6 +172,16 @@ function removeOldMessages(state){
   }
 }
 
+function createSomeZones(numberOfZones, state){
+  for(i = 0; i < numberOfZones; i++){
+    let zone = {type:"circularZone"};
+    zone.radius = Math.random() * 300;
+    zone.position = Math.position = {x:(Math.random() * 4000)-2000,y:(Math.random() * 4000)-2000};
+    zone.color = randomColor();
+    state.objects.push(zone);
+  }
+}
+
 
 // player functions
 
@@ -186,6 +197,20 @@ function movementDirection(player){
   direction = unitVector(direction);
 
   return direction;
+}
+
+// zone functions
+
+function randomColor(){
+  return "hsla("+randomIntInRange(0,255)+", "+100+"%, "+randomIntInRange(35,65)+"%, "+0.8+")";
+}
+
+// msc functions
+
+function randomIntInRange(min, max) {
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
 
@@ -216,8 +241,19 @@ var state =
       }
     }
     return out;
+  },
+  zones: function(){
+    let out = [];
+    for(obj of this.objects){
+      if(obj.type == "circularZone"){
+        out.push(obj);
+      }
+    }
+    return out;
   }
 };
+
+createSomeZones(50, state);
 
 var playerSpeed = 200; // px/sec
 

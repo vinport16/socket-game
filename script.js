@@ -57,7 +57,7 @@ function getVector(e){
 }
 
 function getClickPosition(e){
-  return {x: e.clientX - canvas.parentElement.offsetLeft, y: e.clientY - canvas.parentElement.offsetTop};
+  return {x: e.clientX, y: e.clientY};
 }
 
 function subtract(v1, v2){
@@ -98,8 +98,12 @@ socket.emit("login",playername);
 
 var canvas = document.getElementById("canvas");
 
-canvas.width = (document.body.clientWidth-10) * 1.00 ;
-canvas.height = (document.body.clientHeight-10) * 0.90 ;
+setCanvasSize = function(){
+  canvas.width = document.body.clientWidth * 1.00 ;
+  canvas.height = document.body.clientHeight * 0.90 ;
+}
+
+setCanvasSize();
 
 var ctx = canvas.getContext("2d");
 
@@ -135,7 +139,7 @@ function findInState(name, state){
 // position of your view on the map
 var viewPosition = {x:0,y:0};
 
-var state = [{name:playername,position:viewPosition}];
+var state = [{type:"player",name:playername,position:viewPosition}];
 
 
 document.onkeydown = function (e) {
@@ -149,7 +153,7 @@ document.onkeydown = function (e) {
       console.log(event.which);
 
       if(event.which == enter){
-        socket.emit("message",{text:messageInput.value, timeout:8000});
+        socket.emit("message",{text:messageInput.value, timeout:60000});
         messageInput.value = "";
         document.activeElement.blur();
       }
@@ -206,17 +210,21 @@ document.onkeyup = function (e) {
 };
 
 
-socket.on("state", function(state){
-    viewPosition = findInState(playername,state).position;
-    drawWorld(state);
+socket.on("state", function(s){
+  state = s;
+  viewPosition = findInState(playername,state).position;
+  drawWorld(state);
 });
 
 canvas.addEventListener("mousedown",function(event){
-    let position = statepos(getClickPosition(event));
-    socket.emit("goto",position);
+  let position = statepos(getClickPosition(event));
+  socket.emit("goto",position);
 });
 
-
+window.onresize = function(event) {
+  setCanvasSize();
+  drawWorld(state);
+};
 
 
 // ok

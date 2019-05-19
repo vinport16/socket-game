@@ -1,6 +1,6 @@
 body{
   padding: 0px;
-  margin: 5px;
+  margin: 0px;
   background: linear-gradient(-10deg,rgb(0,150,255),rgb(250,250,255));
   font-family: sans-serif;
   height:100vh;
@@ -9,11 +9,7 @@ body{
 
 canvas{
   background: linear-gradient(10deg,rgb(0,10,20),rgb(0,30,50));
-  border-radius: 10px;
-}
-
-.messageinput{
-  width: 40%;
+  /*border-radius: 10px;*/
 }
 
 div.display{
@@ -124,4 +120,29 @@ span.tooltip {
 
 button:hover:enabled .tooltip {
     visibility: visible;
+}
+
+.messageinput{
+  width: 50%;
+}
+
+span.pane{
+  visibility: visible;
+  width: 33%;
+  background-color: rgba(160,150,255,0.8);
+  color: black;
+  text-align: left;
+  border-radius: 6px;
+  padding: 5px;
+
+  /* Position the tooltip */
+  position: absolute;
+  z-index: 1;
+  top: 10%;
+  right: 33%;
+}
+
+div.objects{
+  width:100%;
+  background-color: red;
 }

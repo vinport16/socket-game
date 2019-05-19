@@ -4,7 +4,7 @@ function abpos(position){
 }
 
 function statepos(position){
-  return subtract( position, subtract( {x:canvas.width/2 + document.body.scrollTop, y:canvas.height/2}, viewPosition))
+  return subtract( position, subtract( {x:canvas.width/2 + document.body.scrollTop, y:canvas.height/2 + document.body.scrollLeft}, viewPosition))
 }
 
 function drawGridLines(){
@@ -34,7 +34,21 @@ function drawWorld(state){
 
   drawGridLines();
 
-  // draw objects
+  // draw zones
+  for (obj of state){
+    if(obj.type == "circularZone"){
+      drawCircle(abpos(obj.position), obj.radius, obj.color, obj.color);
+    }
+  }
+
+  // draw messages
+  for (obj of state){
+    if(obj.type == "message"){
+      drawText(obj.text, add(abpos(obj.position), {x:0, y:-15}), "green");
+    }
+  }
+
+  // draw players
   for (obj of state){
     if(obj.name == playername){
       drawCircle(abpos(obj.position), 10, "white", "red");
@@ -42,8 +56,7 @@ function drawWorld(state){
     }else if(obj.type == "player"){
       drawCircle(abpos(obj.position), 10, "red", "white");
       drawText(obj.name, add(abpos(obj.position), {x:0, y:25}), "red");
-    }else if(obj.type == "message"){
-      drawText(obj.text, add(abpos(obj.position), {x:0, y:-15}), "green");
     }
   }
+
 }
