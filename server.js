@@ -16,23 +16,23 @@ app.get('/socket.io/socket.io.js', function(req, res){
 });
 
 app.get('/style.css', function(req, res){
-  res.sendFile(__dirname + '/style.css');
+  res.sendFile(__dirname + '/frontend/style.css');
 });
 
 app.get('/preload.js', function(req, res){
-  res.sendFile(__dirname + '/preload.js');
+  res.sendFile(__dirname + '/frontend/preload.js');
 });
 
 app.get('/script.js', function(req, res){
-  res.sendFile(__dirname + '/script.js');
+  res.sendFile(__dirname + '/frontend/script.js');
 });
 
 app.get('/objects.js', function(req, res){
-  res.sendFile(__dirname + '/objects.js');
+  res.sendFile(__dirname + '/frontend/objects.js');
 });
 
 app.get('/', function(req, res){
-  res.sendFile(__dirname + '/index.html');
+  res.sendFile(__dirname + '/frontend/index.html');
 });
 
 // vector math functions
@@ -95,22 +95,55 @@ directions.set("right", vector(1, 0));
 
 // state functions
 
-function sendState(state){
+function sendFullState(player, state){
   
   cleanedState = [];
   for (obj of state.players()){
-    cleanedState.push({type:obj.type, name:obj.name, position:obj.position});
+    cleanedState.push({type:obj.type, id:obj.id, name:obj.name, position:obj.position});
   }
 
   for (obj of state.liveMessages()){
-    cleanedState.push({type:obj.type, text:obj.text, position:obj.position, sender:obj.sender.name});
+    cleanedState.push({type:obj.type, id:obj.id, text:obj.text, position:obj.position, sender:obj.sender.name});
   }
 
   cleanedState = cleanedState.concat(state.zones());
 
+  player.socket.emit("state", cleanedState);
+
+}
+
+function sendDeltaState(state){
+  
+  cleanedState = [];
+  for (obj of state.players()){
+    if(obj.changed){
+      cleanedState.push({type:obj.type, id:obj.id, name:obj.name, position:obj.position});
+    }
+  }
+
+  for (obj of state.liveMessages()){
+    if(obj.changed){
+      cleanedState.push({type:obj.type, id:obj.id, text:obj.text, position:obj.position, sender:obj.sender.name});
+    }
+  }
+
+  for(obj of state.zones()){
+    if(obj.changed){
+      cleanedState.push(obj);
+    }
+  }
+
   // send to each player
   for (obj of state.players()){
     obj.socket.emit("state", cleanedState);
+  }
+
+  setAllNotChanged(state);
+}
+
+function setAllNotChanged(state){
+  for(obj of state.objects){
+    obj.changed = false;
   }
 }
 
@@ -126,9 +159,16 @@ function findInState(name, state){
 function deleteFromState(object, state){
   for (var i = 0; i < state.objects.length; i++){
     if(state.objects[i] === object){
+      announceDeletion(state, object.id);
       state.objects.splice(i,1);
       break;
     }
+  }
+}
+
+function announceDeletion(state, id){
+  for(player of state.players()){
+    player.socket.emit("delete", id);
   }
 }
 
@@ -150,17 +190,17 @@ function movePlayers(state){
         player.position = player.moveTarget;
         player.moveTarget = false;
       }
-
+      player.changed = true;
     }else{
       // cancel moveTarget
       player.moveTarget = false;
       // move with WASD
       let direction = movementDirection(player);
-      player.position = add(player.position, multiply(direction, delta/1000 * playerSpeed));
-    
+      if(magnitude(direction) != 0){
+        player.position = add(player.position, multiply(direction, delta/1000 * playerSpeed));
+        player.changed = true;
+      }
     }
-
-    
   }
 }
 
@@ -175,9 +215,11 @@ function removeOldMessages(state){
 function createSomeZones(numberOfZones, state){
   for(i = 0; i < numberOfZones; i++){
     let zone = {type:"circularZone"};
+    zone.id = state.newID();
     zone.radius = Math.random() * 300;
     zone.position = Math.position = {x:(Math.random() * 4000)-2000,y:(Math.random() * 4000)-2000};
     zone.color = randomColor();
+    zone.changed = true;
     state.objects.push(zone);
   }
 }
@@ -221,6 +263,7 @@ var state =
   objects: [],
   startTime: new Date().getTime(),
   frameTime: new Date().getTime(),
+  nextID: 0, // for creating unique IDs for every object
   deltaTime: function(){
     return this.frameTime - new Date().getTime();
   },
@@ -250,10 +293,14 @@ var state =
       }
     }
     return out;
+  },
+  newID: function(){
+    this.nextID = this.nextID + 1;
+    return this.nextID - 1;
   }
 };
 
-createSomeZones(50, state);
+createSomeZones(130, state);
 
 var playerSpeed = 200; // px/sec
 
@@ -267,12 +314,14 @@ io.on("connection", function(socket){
     
     player = {
       type:"player",
+      id: state.newID(),
       name:msg,
       socket:socket,
       position:{x:0,y:0},
       moving: new Map([["up",false],["down",false],["left",false],["right",false]]),
       lastMoved: new Date().getTime(),
       moveTarget: false,
+      changed: true,
       shouldAutoMove: function(){
         let shouldAuto = true;
         this.moving.forEach(function(value, key, map){
@@ -284,6 +333,9 @@ io.on("connection", function(socket){
 
     state.objects.push(player);
 
+    player.socket.emit("your_id", player.id);
+    sendFullState(player, state);
+
     socket.on("disconnect", function(){
       console.log(player.name+" disconnected.");
       deleteFromState(player, state);
@@ -294,11 +346,13 @@ io.on("connection", function(socket){
   socket.on("message", function(mes){
     let message = {
       type:"message",
+      id: state.newID(),
       text:mes.text,
       time:new Date().getTime(),
       timeout:mes.timeout,
       sender: player,
-      position: player.position
+      position: player.position,
+      changed: true
     };
 
     state.objects.push(message);
@@ -334,7 +388,7 @@ function mainLoop(){
 
   removeOldMessages(state);
 
-  sendState(state);
+  sendDeltaState(state);
 }
 
 setInterval(mainLoop,30);

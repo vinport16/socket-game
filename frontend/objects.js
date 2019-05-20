@@ -32,7 +32,7 @@ function drawGridLines(){
 function drawWorld(state){
   clearCanvas();
 
-  drawGridLines();
+  //drawGridLines();
 
   // draw zones
   for (obj of state){
@@ -44,7 +44,7 @@ function drawWorld(state){
   // draw messages
   for (obj of state){
     if(obj.type == "message"){
-      drawText(obj.text, add(abpos(obj.position), {x:0, y:-15}), "green");
+      drawText(obj.text, add(abpos(obj.position), {x:0, y:-15}), "white", 15);
     }
   }
 
@@ -52,10 +52,10 @@ function drawWorld(state){
   for (obj of state){
     if(obj.name == playername){
       drawCircle(abpos(obj.position), 10, "white", "red");
-      drawText(obj.name, add(abpos(obj.position), {x:0, y:25}), "white");
+      drawText(obj.name, add(abpos(obj.position), {x:0, y:25}), "white", 12);
     }else if(obj.type == "player"){
       drawCircle(abpos(obj.position), 10, "red", "white");
-      drawText(obj.name, add(abpos(obj.position), {x:0, y:25}), "red");
+      drawText(obj.name, add(abpos(obj.position), {x:0, y:25}), "red", 12);
     }
   }
 

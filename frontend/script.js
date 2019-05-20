@@ -42,9 +42,9 @@ function drawLine(v1, v2, stroke){
     ctx.stroke();
 }
 
-function drawText(text, position, color){
+function drawText(text, position, color, size){
   ctx.textAlign = "center"
-  ctx.font = "12pt Arial";
+  ctx.font = ""+size+"pt Arial";
   ctx.strokeStyle = color;
   ctx.fillStyle = color;
   ctx.fillText(text, position.x, position.y); 
@@ -123,9 +123,9 @@ function enableAllButtons(){
   }
 }
 
-function findInState(name, state){
+function findInState(id, state){
     for (obj of state){
-        if(obj.name == name){
+        if(obj.id == id){
             return obj;
         }
     }
@@ -139,7 +139,10 @@ function findInState(name, state){
 // position of your view on the map
 var viewPosition = {x:0,y:0};
 
-var state = [{type:"player",name:playername,position:viewPosition}];
+// id of your player object: the server announces this with "your_id" message
+var myID = null;
+
+var state = [];
 
 
 document.onkeydown = function (e) {
@@ -209,11 +212,46 @@ document.onkeyup = function (e) {
 
 };
 
+socket.on("your_id", function(id){
+  myID = id;
+});
 
-socket.on("state", function(s){
-  state = s;
-  viewPosition = findInState(playername,state).position;
-  drawWorld(state);
+function deleteWhereIDsMatch(array, id){
+  for(let i = 0; i < array.length; i++){
+    if(array[i].id == id){
+      array.splice(i,1);
+      return true;
+    }
+  }
+  return false;
+}
+
+function replaceWhereIDsMatch(array, object){
+  for(let i = 0; i < array.length; i++){
+    if(array[i].id == object.id){
+      array[i] = object;
+      return true;
+    }
+  }
+  return false;
+}
+
+socket.on("state", function(deltas){
+  if(myID != null){
+    for(changedObject of deltas){
+      if(!replaceWhereIDsMatch(state, changedObject)){
+        // the object did not replace any other objects (no matching id)
+        // so add it as a new object
+        state.push(changedObject);
+      }
+    }
+    viewPosition = findInState(myID, state).position;
+    drawWorld(state);
+  }
+});
+
+socket.on("delete", function(id){
+  deleteWhereIDsMatch(state, id);
 });
 
 canvas.addEventListener("mousedown",function(event){
